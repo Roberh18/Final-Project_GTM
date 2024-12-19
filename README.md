@@ -1,1 +1,1 @@
-# IKT457_Final-Project_GTM_Hex-Game
+# IKT567 Final Project GTM Hex-Game Winner Prediction
