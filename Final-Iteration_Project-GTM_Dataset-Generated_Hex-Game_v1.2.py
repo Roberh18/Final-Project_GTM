@@ -105,7 +105,6 @@ FEATURE_SELECTION = [
     ENABLE_PIECE_COUNT,
     ENABLE_NEIGHBOR_COUNT,
     ENABLE_CLUSTER_STRENGTH,
-    ENABLE_WEIGHTED_PATH,
     ENABLE_DIRECTIONAL_DOMINANCE,
     ENABLE_CLUSTER_ELONGATION,
     ENABLE_LONGEST_CHAIN,
@@ -117,8 +116,8 @@ FEATURE_SELECTION = [
 
 '''
 MAPPING NUMBERS TO LITERALS
-['X', 'O', ' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z', 'Connected', 'Not Connected']
-  1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16   17   18   19   20   21   22   23   24   25   26   27       28             29
+['X', 'O', ' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']
+  1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16   17   18   19   20   21   22   23   24   25        
   
 total_features = number_of_nodes * number_of_features_per_node
 # For a 5x5 board with 27 symbols:
@@ -392,58 +391,6 @@ def calculate_high_neighbor_count(board, board_size=7):
     else:
         return 'H'  # Blue controls
 
-def compute_weighted_shortest_path(board_2d, player, board_size):
-    opponent = 'O' if player == 'X' else 'X'
-    cost_grid = np.full((board_size, board_size), 1, dtype=int)  
-    cost_grid[board_2d == player] = 0 
-    cost_grid[board_2d == opponent] = 999  # Opponent's cells have a large cost
-
-    # Determine starting and ending edges based on the player
-    if player == 'X':  # Top-to-bottom path
-        start_points = [(0, col) for col in range(board_size)]
-        end_points = [(board_size - 1, col) for col in range(board_size)]
-    else:  # Left-to-right path
-        start_points = [(row, 0) for row in range(board_size)]
-        end_points = [(row, board_size - 1) for row in range(board_size)]
-
-    # Initialize priority queue for Dijkstra's algorithm
-    pq = []
-    for start in start_points:
-        heapq.heappush(pq, (0, start))  # (cost, position)
-
-    visited = set()
-
-    # Dijkstra's algorithm to find the shortest path
-    while pq:
-        current_cost, (x, y) = heapq.heappop(pq)
-        if (x, y) in visited:
-            continue
-        visited.add((x, y))
-
-        # If we've reached any end point, return the cost
-        if (x, y) in end_points:
-            return current_cost
-
-        # Explore neighbors
-        for nr, nc in get_neighbors(x, y, board_size):
-            if (nr, nc) not in visited:
-                new_cost = current_cost + cost_grid[nr, nc]
-                heapq.heappush(pq, (new_cost, (nr, nc)))
-
-    # If no path is found, return None
-    return None
-
-def weighted_shortest_path_feature(board_2d, board_size=7):
-    red_cost = compute_weighted_shortest_path(board_2d, 'X', board_size)
-    blue_cost = compute_weighted_shortest_path(board_2d, 'O', board_size)
-    # Handle cases where a path might not exist
-    if red_cost is None and blue_cost is None:
-        return 'L'  # Default to Blue if no paths exist
-    elif red_cost is None:
-        return 'L'
-    elif blue_cost is None:
-        return 'K'
-    return 'K' if red_cost < blue_cost else 'L'
 
 def cluster_strength(board_2d, player, board_size=7):
     visited = set()
@@ -685,7 +632,6 @@ def convert_feature_values(features):
                     'R': 0, 'S': 1,
                     'T': 0, 'U': 1,
                     'V': 0, 'W': 1,
-                    'Y': 0, 'Z': 1
                 }
                 converted_feature[key] = mapping.get(value, 0)  # Default to 0 if undefined
             else:
